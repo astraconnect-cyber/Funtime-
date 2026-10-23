@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Nook - Games & Chat Hub</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #ec4899;
+            --accent-hover: #db2777;
+            --text-color: #f8fafc;
+            --border: #334155;
+            --chat-bg: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #1e293b;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        nav button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            margin-left: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        nav button.active, nav button:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .main-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Profile Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--accent);
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #0f172a;
+            color: #fff;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background: var(--accent-hover); }
+
+        /* Chat Sidebar */
+        .chat-sidebar {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+        }
+
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .msg {
+            background: #334155;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            max-width: 85%;
+            word-break: break-word;
+        }
+
+        .msg.self {
+            align-self: flex-end;
+            background: var(--accent);
+        }
+
+        .msg .sender {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-bottom: 0.2rem;
+        }
+
+        .chat-input {
+            padding: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-input input {
+            margin: 0;
+            flex: 1;
+        }
+
+        .tab-content { display: none; flex: 1; }
+        .tab-content.active { display: flex; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <!-- Setup Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <h2>💖 Welcome to Our Nook</h2>
+            <p style="margin-top: 0.5rem; color: #94a3b8;">Enter your name to join the game board</p>
+            <input type="text" id="playerNameInput" placeholder="Your Name or Nickname..." maxlength="15">
+            <button class="btn" onclick="saveProfile()">Start Playing</button>
+        </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header>
+        <div class="logo">💖 Our Play & Love Nook</div>
+        <nav>
+            <button class="nav-btn active" onclick="switchTab('tictactoe')">Tic Tac Toe</button>
+            <button class="nav-btn" onclick="switchTab('truthdare')">Truth & Dare</button>
+            <button class="nav-btn" onclick="switchTab('whot')">Naija Whot</button>
+            <button class="nav-btn" onclick="switchTab('ludo')">Ludo</button>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- 1. TIC TAC TOE -->
+            <div id="tictactoe" class="tab-content active">
+                <h2 style="text-align: center; margin-bottom: 1rem;">Tic Tac Toe 💕</h2>
+                <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 100px); gap: 10px;" id="ttt-board">
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 0)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 1)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 2)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 3)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 4)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 5)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 6)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 7)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 8)"></button>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <p id="ttt-status">Player X's Turn</p>
+                    <button class="btn" style="width: auto; margin-top: 0.5rem;" onclick="resetTTT()">Restart Game</button>
+                </div>
+            </div>
+
+            <!-- 2. TRUTH OR DARE WITH SPINNING BOTTLE & CUSTOM PROMPTS -->
+            <div id="truthdare" class="tab-content">
+                <h2 style="text-align: center; margin-bottom: 0.5rem;">🍾 Spin the Bottle: Truth or Dare</h2>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; margin: 1rem 0;">
+                    <!-- Bottle Container -->
+                    <div style="width: 200px; height: 200px; position: relative; display: flex; justify-content: center; align-items: center;">
+                        <div id="bottle" style="font-size: 4rem; transition: transform 3s cubic-bezier(0.15, 0.9, 0.15, 1); cursor: pointer;" onclick="spinBottle()">🍾</div>
+                    </div>
+                    <button class="btn" style="width: auto;" onclick="spinBottle()">Spin Bottle</button>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem;">
+                    <button class="btn" style="background: #3b82f6;" onclick="getPrompt('Truth')">Pick Truth</button>
+                    <button class="btn" style="background: #ef4444;" onclick="getPrompt('Dare')">Pick Dare</button>
+                </div>
+
+                <div id="promptDisplay" style="background: #0f172a; padding: 1rem; border-radius: 8px; text-align: center; min-height: 60px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); font-weight: bold; color: #f43f5e;">
+                    Click "Spin Bottle" or select Truth / Dare to get started!
+                </div>
+
+                <!-- Custom Truth/Dare Submissions -->
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                    <h3>✍️ Submit a Truth or Dare for Others</h3>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                        <select id="customType" style="padding: 0.5rem; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 6px;">
+                            <option value="Truth">Truth</option>
+                            <option value="Dare">Dare</option>
+                        </select>
+                        <input type="text" id="customInput" placeholder="Enter a secret prompt or task..." style="margin: 0;">
+                        <button class="btn" style="width: auto;" onclick="addCustomPrompt()">Add Prompt</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. NAIJA WHOT -->
+            <div id="whot" class="tab-content">
+                <h2 style="text-align: center;">🎴 Naija Whot</h2>
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 1rem;">
+                    <div style="display: flex; gap: 2rem; align-items: center;">
+                        <div style="width: 90px; height: 130px; border: 2px dashed var(--accent); border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #0f172a; cursor: pointer;" onclick="drawWhotCard()">
+                            <b>Draw Deck</b>
+                        </div>
+                        <div id="whotDiscard" style="width: 90px; height: 130px; border: 2px solid var(--accent); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #334155; font-size: 1.2rem; font-weight: bold;">
+                            <div>20</div>
+                            <div style="font-size: 1.8rem;">▲</div>
+                        </div>
+                    </div>
+                    <p id="whotStatus">Your Turn! Match shape or number.</p>
+                    <div style="border-top: 1px solid var(--border); width: 100%; padding-top: 1rem; text-align: center;">
+                        <h4>Your Hand</h4>
+                        <div id="whotHand" style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; flex-wrap: wrap;">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. LUDO BOARD -->
+            <div id="ludo" class="tab-content">
+                <h2 style="text-align: center; margin-bottom: 1rem;">🎲 Classic Ludo</h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 5px; background: var(--border); padding: 5px; border-radius: 8px;">
+                        <div style="background: #ef4444; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold;">Red Base</div>
+                        <div style="background: #0f172a; display: flex; align-items: center; justify-content: center;">Track</div>
+                        <div style="background: #3b82f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold;">Blue Base</div>
+                        <div style="background: #0f172a; display: flex; align-items: center; justify-content: center;">Track</div>
+                        <div style="background: #eab308; display: flex; align-items: center; justify-content: center; font-weight: bold; color: black;">HOME</div>
+                        <div style="background: #0f172a; display: flex; align-items: center; justify-content: center;">Track</div>
+                        <div style="background: #22c55e; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold;">Green Base</div>
+                        <div style="background: #0f172a; display: flex; align-items: center; justify-content: center;">Track</div>
+                        <div style="background: #a855f7; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold;">Yellow Base</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div id="diceVal" style="font-size: 2.5rem; width: 60px; height: 60px; background: #0f172a; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--border);">🎲</div>
+                        <button class="btn" style="width: auto;" onclick="rollDice()">Roll Dice</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Sidebar -->
+        <div class="chat-sidebar">
+            <div class="chat-header">💬 Live Nook Chat</div>
+            <div class="chat-messages" id="chatContainer">
+                <div class="msg"><div class="sender">System</div>Welcome to Our Love Nook! Set your name and start playing together.</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="msgInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()">
+                <button class="btn" style="width: auto;" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentUser = "Guest";
+        let tttBoard = ["", "", "", "", "", "", "", "", ""];
+        let tttTurn = "X";
+        let currentRotation = 0;
+
+        // Default Truths and Dares
+        let truths = [
+            "What is your biggest fear in a relationship?",
+            "What was your first impression of me?",
+            "What is one secret you've never told anyone?",
+            "What is your favorite memory of us together?"
+        ];
+
+        let dares = [
+            "Send a romantic voice note right now!",
+            "Do 10 pushups or tell a silly joke.",
+            "Let the other player post a status update from your phone.",
+            "Sing the chorus of your favorite song out loud."
+        ];
+
+        // Save Profile Name
+        function saveProfile() {
+            const name = document.getElementById('playerNameInput').value.trim();
+            if (name !== "") {
+                currentUser = name;
+                document.getElementById('profileModal').style.display = 'none';
+                addChatMessage("System", `${currentUser} joined the nook!`);
+            }
+        }
+
+        // Switch Navigation Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Chat System
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            if (text !== "") {
+                addChatMessage(currentUser, text, true);
+                input.value = "";
+            }
+        }
+
+        function addChatMessage(sender, text, isSelf = false) {
+            const container = document.getElementById('chatContainer');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg ${isSelf ? 'self' : ''}`;
+            msgDiv.innerHTML = `<div class="sender">${sender}</div>${text}`;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Tic Tac Toe Mechanics
+        function playTTT(btn, index) {
+            if (tttBoard[index] === "") {
+                tttBoard[index] = tttTurn;
+                btn.innerText = tttTurn;
+                if (checkTTTWin()) {
+                    document.getElementById('ttt-status').innerText = `🎉 Player ${tttTurn} Wins!`;
+                    addChatMessage("Game Center", `🎉 ${currentUser} won a round of Tic Tac Toe!`);
+                } else {
+                    tttTurn = tttTurn === "X" ? "O" : "X";
+                    document.getElementById('ttt-status').innerText = `Player ${tttTurn}'s Turn`;
+                }
+            }
+        }
+
+        function checkTTTWin() {
+            const wins = [
+                [0,1,2], [3,4,5], [6,7,8],
+                [0,3,6], [1,4,7], [2,5,8],
+                [0,4,8], [2,4,6]
+            ];
+            return wins.some(comb => {
+                return comb.every(idx => tttBoard[idx] === tttTurn);
+            });
+        }
+
+        function resetTTT() {
+            tttBoard = ["", "", "", "", "", "", "", "", ""];
+            tttTurn = "X";
+            document.querySelectorAll('#ttt-board button').forEach(b => b.innerText = "");
+            document.getElementById('ttt-status').innerText = "Player X's Turn";
+        }
+
+        // Truth or Dare & Spin Bottle
+        function spinBottle() {
+            const bottle = document.getElementById('bottle');
+            const randomSpin = 720 + Math.floor(Math.random() * 360);
+            currentRotation += randomSpin;
+            bottle.style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(() => {
+                const choice = Math.random() > 0.5 ? "Truth" : "Dare";
+                getPrompt(choice);
+            }, 3000);
+        }
+
+        function getPrompt(type) {
+            const list = type === "Truth" ? truths : dares;
+            const randomPrompt = list[Math.floor(Math.random() * list.length)];
+            document.getElementById('promptDisplay').innerText = `[${type.toUpperCase()}]: ${randomPrompt}`;
+        }
+
+        function addCustomPrompt() {
+            const type = document.getElementById('customType').value;
+            const input = document.getElementById('customInput');
+            const val = input.value.trim();
+
+            if (val !== "") {
+                if (type === "Truth") truths.push(val);
+                else dares.push(val);
+                
+                addChatMessage("Truth & Dare", `${currentUser} added a new custom ${type}!`);
+                alert(`New ${type} added successfully!`);
+                input.value = "";
+            }
+        }
+
+        // Whot Draw Card Mock
+        function drawWhotCard() {
+            const shapes = ["▲", "🔴", "⬛", "⭐️", "❌"];
+            const numbers = [1, 2, 3, 4, 5, 7, 8, 10, 11, 13, 14];
+            
+            const shape = shapes[Math.floor(Math.random() * shapes.length)];
+            const num = numbers[Math.floor(Math.random() * numbers.length)];
+            
+            const hand = document.getElementById('whotHand');
+            const card = document.createElement('div');
+            card.style.cssText = "width: 70px; height: 100px; border: 1px solid var(--border); border-radius: 6px; background: #1e293b; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;";
+            card.innerHTML = `<div>${num}</div><div>${shape}</div>`;
+            card.onclick = function() {
+                document.getElementById('whotDiscard').innerHTML = `<div>${num}</div><div style="font-size: 1.8rem;">${shape}</div>`;
+                this.remove();
+            };
+            hand.appendChild(card);
+        }
+
+        // Ludo Dice Roll
+        function rollDice() {
+            const val = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('diceVal').innerText = val;
+            addChatMessage("Ludo", `${currentUser} rolled a ${val}!`);
+        }
+
+        // Initialize Whot Hand
+        drawWhotCard();
+        drawWhotCard();
+        drawWhotCard();
+    </script>
+</body>
+</html>
