@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Nook - Games & Chat Hub</title>
+    <title>Our Nook - Multi-Game Hub</title>
+    <!-- PeerJS Library for Live Phone-to-Phone Connection -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -38,6 +40,8 @@
             align-items: center;
             border-bottom: 2px solid var(--accent);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
         .logo {
@@ -76,6 +80,10 @@
             width: 100%;
         }
 
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
         .main-content {
             background: var(--card-bg);
             border-radius: 12px;
@@ -85,11 +93,11 @@
             flex-direction: column;
         }
 
-        /* Profile Modal */
+        /* Profile & Connection Modal */
         .modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -101,7 +109,7 @@
             padding: 2rem;
             border-radius: 12px;
             width: 90%;
-            max-width: 400px;
+            max-width: 440px;
             text-align: center;
             border: 1px solid var(--accent);
         }
@@ -130,6 +138,26 @@
 
         .btn:hover { background: var(--accent-hover); }
 
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            background: #0f172a;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .status-dot.connected { background: #22c55e; }
+
         /* Chat Sidebar */
         .chat-sidebar {
             background: var(--card-bg);
@@ -138,6 +166,7 @@
             display: flex;
             flex-direction: column;
             height: calc(100vh - 120px);
+            min-height: 400px;
         }
 
         .chat-header {
@@ -192,73 +221,83 @@
 </head>
 <body>
 
-    <!-- Setup Profile Modal -->
+    <!-- Multiplayer Connection Modal -->
     <div id="profileModal" class="modal">
         <div class="modal-content">
             <h2>💖 Welcome to Our Nook</h2>
-            <p style="margin-top: 0.5rem; color: #94a3b8;">Enter your name to join the game board</p>
+            <p style="margin-top: 0.5rem; color: #94a3b8;">Enter your name and join or host a room</p>
+            
             <input type="text" id="playerNameInput" placeholder="Your Name or Nickname..." maxlength="15">
-            <button class="btn" onclick="saveProfile()">Start Playing</button>
+
+            <div style="margin: 1rem 0; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <button class="btn" style="background: #3b82f6; margin-bottom: 0.5rem;" onclick="hostGame()">Host New Room (Get Code)</button>
+                <p style="font-size: 0.85rem; color: #94a3b8; margin: 0.5rem 0;">— OR JOIN A FRIEND —</p>
+                <input type="text" id="joinCodeInput" placeholder="Enter Friend's 4-Digit Room Code..." style="margin-bottom: 0.5rem;">
+                <button class="btn" onclick="joinGame()">Join Room</button>
+            </div>
         </div>
     </div>
 
     <!-- Main Navigation Header -->
     <header>
         <div class="logo">💖 Our Play & Love Nook</div>
+        <div class="connection-status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Offline</span>
+            <span id="roomCodeBadge" style="font-weight: bold; color: var(--accent); margin-left: 0.5rem;"></span>
+        </div>
         <nav>
-            <button class="nav-btn active" onclick="switchTab('tictactoe')">Tic Tac Toe</button>
-            <button class="nav-btn" onclick="switchTab('truthdare')">Truth & Dare</button>
-            <button class="nav-btn" onclick="switchTab('whot')">Naija Whot</button>
-            <button class="nav-btn" onclick="switchTab('ludo')">Ludo</button>
+            <button class="nav-btn active" onclick="switchTab('tictactoe', event)">Tic Tac Toe</button>
+            <button class="nav-btn" onclick="switchTab('truthdare', event)">Truth & Dare</button>
+            <button class="nav-btn" onclick="switchTab('whot', event)">Naija Whot</button>
+            <button class="nav-btn" onclick="switchTab('ludo', event)">Ludo</button>
         </nav>
     </header>
 
     <div class="container">
         <div class="main-content">
-            <!-- 1. TIC TAC TOE -->
+                            <!-- 1. TIC TAC TOE -->
             <div id="tictactoe" class="tab-content active">
                 <h2 style="text-align: center; margin-bottom: 1rem;">Tic Tac Toe 💕</h2>
                 <div style="display: flex; justify-content: center; align-items: center; flex: 1;">
                     <div style="display: grid; grid-template-columns: repeat(3, 100px); gap: 10px;" id="ttt-board">
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 0)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 1)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 2)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 3)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 4)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 5)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 6)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 7)"></button>
-                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(this, 8)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(0)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(1)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(2)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(3)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(4)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(5)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(6)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(7)"></button>
+                        <button style="height: 100px; font-size: 2rem; background: #0f172a; color: white; border: 1px solid var(--border); cursor: pointer;" onclick="playTTT(8)"></button>
                     </div>
                 </div>
                 <div style="text-align: center; margin-top: 1rem;">
-                    <p id="ttt-status">Player X's Turn</p>
-                    <button class="btn" style="width: auto; margin-top: 0.5rem;" onclick="resetTTT()">Restart Game</button>
+                    <p id="ttt-status">Waiting for game to start...</p>
+                    <button class="btn" style="width: auto; margin-top: 0.5rem;" onclick="resetTTT(true)">Restart Game</button>
                 </div>
             </div>
 
-            <!-- 2. TRUTH OR DARE WITH SPINNING BOTTLE & CUSTOM PROMPTS -->
+            <!-- 2. TRUTH OR DARE WITH SPIN BOTTLE & CUSTOM SUBMISSIONS -->
             <div id="truthdare" class="tab-content">
                 <h2 style="text-align: center; margin-bottom: 0.5rem;">🍾 Spin the Bottle: Truth or Dare</h2>
                 
                 <div style="display: flex; flex-direction: column; align-items: center; margin: 1rem 0;">
-                    <!-- Bottle Container -->
                     <div style="width: 200px; height: 200px; position: relative; display: flex; justify-content: center; align-items: center;">
-                        <div id="bottle" style="font-size: 4rem; transition: transform 3s cubic-bezier(0.15, 0.9, 0.15, 1); cursor: pointer;" onclick="spinBottle()">🍾</div>
+                        <div id="bottle" style="font-size: 4rem; transition: transform 3s cubic-bezier(0.15, 0.9, 0.15, 1); cursor: pointer;" onclick="spinBottle(true)">🍾</div>
                     </div>
-                    <button class="btn" style="width: auto;" onclick="spinBottle()">Spin Bottle</button>
+                    <button class="btn" style="width: auto;" onclick="spinBottle(true)">Spin Bottle</button>
                 </div>
 
                 <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem;">
-                    <button class="btn" style="background: #3b82f6;" onclick="getPrompt('Truth')">Pick Truth</button>
-                    <button class="btn" style="background: #ef4444;" onclick="getPrompt('Dare')">Pick Dare</button>
+                    <button class="btn" style="background: #3b82f6;" onclick="getPrompt('Truth', true)">Pick Truth</button>
+                    <button class="btn" style="background: #ef4444;" onclick="getPrompt('Dare', true)">Pick Dare</button>
                 </div>
 
                 <div id="promptDisplay" style="background: #0f172a; padding: 1rem; border-radius: 8px; text-align: center; min-height: 60px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); font-weight: bold; color: #f43f5e;">
-                    Click "Spin Bottle" or select Truth / Dare to get started!
+                    Click "Spin Bottle" or select Truth / Dare!
                 </div>
 
-                <!-- Custom Truth/Dare Submissions -->
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
                     <h3>✍️ Submit a Truth or Dare for Others</h3>
                     <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
@@ -267,7 +306,7 @@
                             <option value="Dare">Dare</option>
                         </select>
                         <input type="text" id="customInput" placeholder="Enter a secret prompt or task..." style="margin: 0;">
-                        <button class="btn" style="width: auto;" onclick="addCustomPrompt()">Add Prompt</button>
+                        <button class="btn" style="width: auto;" onclick="addCustomPrompt(true)">Add Prompt</button>
                     </div>
                 </div>
             </div>
@@ -285,17 +324,15 @@
                             <div style="font-size: 1.8rem;">▲</div>
                         </div>
                     </div>
-                    <p id="whotStatus">Your Turn! Match shape or number.</p>
+                    <p id="whotStatus">Your Turn! Tap a card to play or draw.</p>
                     <div style="border-top: 1px solid var(--border); width: 100%; padding-top: 1rem; text-align: center;">
                         <h4>Your Hand</h4>
-                        <div id="whotHand" style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; flex-wrap: wrap;">
-                            <!-- Dynamic Cards -->
-                        </div>
+                        <div id="whotHand" style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; flex-wrap: wrap;"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. LUDO BOARD -->
+            <!-- 4. LUDO -->
             <div id="ludo" class="tab-content">
                 <h2 style="text-align: center; margin-bottom: 1rem;">🎲 Classic Ludo</h2>
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
@@ -312,7 +349,7 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <div id="diceVal" style="font-size: 2.5rem; width: 60px; height: 60px; background: #0f172a; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--border);">🎲</div>
-                        <button class="btn" style="width: auto;" onclick="rollDice()">Roll Dice</button>
+                        <button class="btn" style="width: auto;" onclick="rollDice(true)">Roll Dice</button>
                     </div>
                 </div>
             </div>
@@ -322,21 +359,25 @@
         <div class="chat-sidebar">
             <div class="chat-header">💬 Live Nook Chat</div>
             <div class="chat-messages" id="chatContainer">
-                <div class="msg"><div class="sender">System</div>Welcome to Our Love Nook! Set your name and start playing together.</div>
+                <div class="msg"><div class="sender">System</div>Welcome to Our Love Nook! Host or join a room code to play together live across phones.</div>
             </div>
             <div class="chat-input">
                 <input type="text" id="msgInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()">
                 <button class="btn" style="width: auto;" onclick="sendMessage()">Send</button>
             </div>
         </div>
-    </div>
-    <script>
+                            </div>
+        <script>
+        let peer = null;
+        let conn = null;
         let currentUser = "Guest";
+        let isHost = false;
+        let myRole = "X";
+
         let tttBoard = ["", "", "", "", "", "", "", "", ""];
         let tttTurn = "X";
         let currentRotation = 0;
 
-        // Default Truths and Dares
         let truths = [
             "What is your biggest fear in a relationship?",
             "What was your first impression of me?",
@@ -351,31 +392,144 @@
             "Sing the chorus of your favorite song out loud."
         ];
 
-        // Save Profile Name
-        function saveProfile() {
+        // --- PEERJS MULTIPLAYER CONTROLLER ---
+        
+        function hostGame() {
             const name = document.getElementById('playerNameInput').value.trim();
-            if (name !== "") {
-                currentUser = name;
+            if (!name) return alert("Please enter your name!");
+            currentUser = name;
+            isHost = true;
+            myRole = "X";
+
+            // Generate 4-digit room code
+            const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+            peer = new Peer('nook-room-' + roomCode);
+
+            peer.on('open', (id) => {
                 document.getElementById('profileModal').style.display = 'none';
-                addChatMessage("System", `${currentUser} joined the nook!`);
+                updateStatus(false, "Waiting for partner...");
+                document.getElementById('roomCodeBadge').innerText = `Room Code: ${roomCode}`;
+                addChatMessage("System", `Room created! Share room code "${roomCode}" with your partner.`);
+            });
+
+            peer.on('connection', (c) => {
+                conn = c;
+                setupConnection();
+            });
+
+            peer.on('error', (err) => {
+                alert("Error hosting room. Please try again.");
+                console.error(err);
+            });
+        }
+
+        function joinGame() {
+            const name = document.getElementById('playerNameInput').value.trim();
+            const code = document.getElementById('joinCodeInput').value.trim();
+            if (!name) return alert("Please enter your name!");
+            if (!code) return alert("Please enter a room code!");
+            currentUser = name;
+            isHost = false;
+            myRole = "O";
+
+            peer = new Peer();
+
+            peer.on('open', () => {
+                conn = peer.connect('nook-room-' + code);
+                setupConnection();
+                document.getElementById('profileModal').style.display = 'none';
+                document.getElementById('roomCodeBadge').innerText = `Room Code: ${code}`;
+            });
+
+            peer.on('error', (err) => {
+                alert("Could not connect to room. Check code and try again.");
+                console.error(err);
+            });
+        }
+
+        function setupConnection() {
+            conn.on('open', () => {
+                updateStatus(true, "Connected");
+                sendData({ type: 'JOIN', name: currentUser });
+                resetTTT(false);
+            });
+
+            conn.on('data', (data) => {
+                handleIncomingData(data);
+            });
+
+            conn.on('close', () => {
+                updateStatus(false, "Partner Disconnected");
+            });
+        }
+
+        function sendData(data) {
+            if (conn && conn.open) {
+                conn.send(data);
             }
         }
 
-        // Switch Navigation Tabs
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+        function updateStatus(connected, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            statusText.innerText = text;
+            if (connected) {
+                dot.classList.add('connected');
+            } else {
+                dot.classList.remove('connected');
+            }
         }
 
-        // Chat System
+        function handleIncomingData(data) {
+            switch(data.type) {
+                case 'JOIN':
+                    addChatMessage("System", `${data.name} connected to the room!`);
+                    break;
+                case 'CHAT':
+                    addChatMessage(data.sender, data.text, false);
+                    break;
+                case 'TTT_MOVE':
+                    applyTTTMove(data.index, data.role);
+                    break;
+                case 'TTT_RESET':
+                    resetTTT(false);
+                    break;
+                case 'SPIN_BOTTLE':
+                    spinBottle(false, data.rotation, data.choice);
+                    break;
+                case 'PROMPT':
+                    document.getElementById('promptDisplay').innerText = `[${data.promptType.toUpperCase()}]: ${data.text}`;
+                    break;
+                case 'ADD_CUSTOM':
+                    if (data.promptType === "Truth") truths.push(data.text);
+                    else dares.push(data.text);
+                    addChatMessage("Truth & Dare", `${data.sender} added a new custom ${data.promptType}!`);
+                    break;
+                case 'DICE':
+                    document.getElementById('diceVal').innerText = data.val;
+                    addChatMessage("Ludo", `${data.sender} rolled a ${data.val}!`);
+                    break;
+                case 'WHOT_DISCARD':
+                    document.getElementById('whotDiscard').innerHTML = `<div>${data.num}</div><div style="font-size: 1.8rem;">${data.shape}</div>`;
+                    break;
+            }
+        }
+
+        // --- UI & GAME LOGIC ---
+
+        function switchTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (event) event.target.classList.add('active');
+        }
+
         function sendMessage() {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
             if (text !== "") {
                 addChatMessage(currentUser, text, true);
+                sendData({ type: 'CHAT', sender: currentUser, text: text });
                 input.value = "";
             }
         }
@@ -389,59 +543,72 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // Tic Tac Toe Mechanics
-        function playTTT(btn, index) {
-            if (tttBoard[index] === "") {
-                tttBoard[index] = tttTurn;
-                btn.innerText = tttTurn;
-                if (checkTTTWin()) {
-                    document.getElementById('ttt-status').innerText = `🎉 Player ${tttTurn} Wins!`;
-                    addChatMessage("Game Center", `🎉 ${currentUser} won a round of Tic Tac Toe!`);
-                } else {
-                    tttTurn = tttTurn === "X" ? "O" : "X";
-                    document.getElementById('ttt-status').innerText = `Player ${tttTurn}'s Turn`;
-                }
+        function playTTT(index) {
+            if (tttBoard[index] === "" && tttTurn === myRole) {
+                applyTTTMove(index, myRole);
+                sendData({ type: 'TTT_MOVE', index: index, role: myRole });
             }
         }
 
-        function checkTTTWin() {
+        function applyTTTMove(index, role) {
+            tttBoard[index] = role;
+            const buttons = document.querySelectorAll('#ttt-board button');
+            buttons[index].innerText = role;
+
+            if (checkTTTWin(role)) {
+                document.getElementById('ttt-status').innerText = `🎉 Player ${role} Wins!`;
+            } else if (tttBoard.every(cell => cell !== "")) {
+                document.getElementById('ttt-status').innerText = `It's a Draw!`;
+            } else {
+                tttTurn = role === "X" ? "O" : "X";
+                const isMyTurn = tttTurn === myRole;
+                document.getElementById('ttt-status').innerText = isMyTurn ? `Your Turn (${myRole})` : `Partner's Turn (${tttTurn})`;
+            }
+        }
+
+        function checkTTTWin(role) {
             const wins = [
                 [0,1,2], [3,4,5], [6,7,8],
                 [0,3,6], [1,4,7], [2,5,8],
                 [0,4,8], [2,4,6]
             ];
-            return wins.some(comb => {
-                return comb.every(idx => tttBoard[idx] === tttTurn);
-            });
+            return wins.some(comb => comb.every(idx => tttBoard[idx] === role));
         }
 
-        function resetTTT() {
+        function resetTTT(broadcast = true) {
             tttBoard = ["", "", "", "", "", "", "", "", ""];
             tttTurn = "X";
             document.querySelectorAll('#ttt-board button').forEach(b => b.innerText = "");
-            document.getElementById('ttt-status').innerText = "Player X's Turn";
+            const isMyTurn = tttTurn === myRole;
+            document.getElementById('ttt-status').innerText = isMyTurn ? `Your Turn (${myRole})` : `Partner's Turn (${tttTurn})`;
+            if (broadcast) sendData({ type: 'TTT_RESET' });
         }
 
-        // Truth or Dare & Spin Bottle
-        function spinBottle() {
+        function spinBottle(broadcast = true, syncRotation = null, syncChoice = null) {
             const bottle = document.getElementById('bottle');
-            const randomSpin = 720 + Math.floor(Math.random() * 360);
-            currentRotation += randomSpin;
+            const choice = syncChoice || (Math.random() > 0.5 ? "Truth" : "Dare");
+            const rotation = syncRotation || (currentRotation + 720 + Math.floor(Math.random() * 360));
+            currentRotation = rotation;
+
             bottle.style.transform = `rotate(${currentRotation}deg)`;
-            
+
+            if (broadcast) {
+                sendData({ type: 'SPIN_BOTTLE', rotation: currentRotation, choice: choice });
+            }
+
             setTimeout(() => {
-                const choice = Math.random() > 0.5 ? "Truth" : "Dare";
-                getPrompt(choice);
+                if (broadcast) getPrompt(choice, true);
             }, 3000);
         }
 
-        function getPrompt(type) {
+        function getPrompt(type, broadcast = true) {
             const list = type === "Truth" ? truths : dares;
-            const randomPrompt = list[Math.floor(Math.random() * list.length)];
-            document.getElementById('promptDisplay').innerText = `[${type.toUpperCase()}]: ${randomPrompt}`;
+            const text = list[Math.floor(Math.random() * list.length)];
+            document.getElementById('promptDisplay').innerText = `[${type.toUpperCase()}]: ${text}`;
+            if (broadcast) sendData({ type: 'PROMPT', promptType: type, text: text });
         }
 
-        function addCustomPrompt() {
+        function addCustomPrompt(broadcast = true) {
             const type = document.getElementById('customType').value;
             const input = document.getElementById('customInput');
             const val = input.value.trim();
@@ -449,14 +616,13 @@
             if (val !== "") {
                 if (type === "Truth") truths.push(val);
                 else dares.push(val);
-                
+
                 addChatMessage("Truth & Dare", `${currentUser} added a new custom ${type}!`);
-                alert(`New ${type} added successfully!`);
+                if (broadcast) sendData({ type: 'ADD_CUSTOM', sender: currentUser, promptType: type, text: val });
                 input.value = "";
             }
         }
 
-        // Whot Draw Card Mock
         function drawWhotCard() {
             const shapes = ["▲", "🔴", "⬛", "⭐️", "❌"];
             const numbers = [1, 2, 3, 4, 5, 7, 8, 10, 11, 13, 14];
@@ -470,22 +636,24 @@
             card.innerHTML = `<div>${num}</div><div>${shape}</div>`;
             card.onclick = function() {
                 document.getElementById('whotDiscard').innerHTML = `<div>${num}</div><div style="font-size: 1.8rem;">${shape}</div>`;
+                sendData({ type: 'WHOT_DISCARD', num: num, shape: shape });
                 this.remove();
             };
             hand.appendChild(card);
         }
 
-        // Ludo Dice Roll
-        function rollDice() {
+        function rollDice(broadcast = true) {
             const val = Math.floor(Math.random() * 6) + 1;
             document.getElementById('diceVal').innerText = val;
             addChatMessage("Ludo", `${currentUser} rolled a ${val}!`);
+            if (broadcast) sendData({ type: 'DICE', sender: currentUser, val: val });
         }
 
-        // Initialize Whot Hand
+        // Initialize Whot Cards
         drawWhotCard();
         drawWhotCard();
         drawWhotCard();
     </script>
 </body>
-</html>
+    </html>
+    
